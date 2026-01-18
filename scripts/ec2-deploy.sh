@@ -268,7 +268,7 @@ show_help() {
 }
 
 # Main
-case "${1:-help}" in
+case "${1:-deploy}" in
     setup)
         check_prerequisites
         configure_kubeconfig
