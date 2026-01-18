@@ -159,6 +159,54 @@ get_url() {
     fi
 }
 
+# Wait for ALB and display URL prominently
+wait_for_alb() {
+    log_info "Waiting for ALB to be ready..."
+    local max_attempts=30
+    local attempt=1
+    local URL=""
+
+    while [[ $attempt -le $max_attempts ]]; do
+        URL=$(kubectl get ingress -n devops-agent-demo -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+        if [[ -n "$URL" ]]; then
+            break
+        fi
+        echo -n "."
+        sleep 5
+        ((attempt++))
+    done
+    echo ""
+
+    if [[ -n "$URL" ]]; then
+        print_alb_banner "$URL"
+    else
+        log_warn "ALB URL not available yet. Run '$0 url' to check later."
+    fi
+}
+
+# Print ALB URL banner
+print_alb_banner() {
+    local URL="$1"
+    local CYAN='\033[0;36m'
+    local BOLD='\033[1m'
+
+    echo ""
+    echo -e "${BOLD}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}║                                                                              ║${NC}"
+    echo -e "${BOLD}║${NC}  ${GREEN}✓ DEPLOYMENT COMPLETE${NC}                                                      ${BOLD}║${NC}"
+    echo -e "${BOLD}║                                                                              ║${NC}"
+    echo -e "${BOLD}║${NC}  ${CYAN}ALB URL:${NC}                                                                    ${BOLD}║${NC}"
+    echo -e "${BOLD}║${NC}  ${YELLOW}http://${URL}${NC}"
+    echo -e "${BOLD}║                                                                              ║${NC}"
+    echo -e "${BOLD}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "  Copy this URL to access your application in a browser."
+    echo ""
+
+    # Also output just the URL for easy copying/parsing
+    echo "ALB_URL=http://$URL"
+}
+
 # Show status
 status() {
     log_info "Cluster status:"
@@ -184,9 +232,25 @@ full_deploy() {
     echo ""
     read -p "Press Enter to deploy Phase 2 (notification-service)..."
     deploy_phase2
-    get_url
 
-    log_info "Full deployment complete!"
+    # Final summary with ALB URL
+    echo ""
+    log_info "Deployment complete! Waiting for ALB..."
+    wait_for_alb
+}
+
+# Quick deploy (no prompts, both phases)
+quick_deploy() {
+    check_prerequisites
+    configure_kubeconfig
+    teardown
+    deploy_phase1
+    deploy_phase2
+
+    # Final summary with ALB URL
+    echo ""
+    log_info "Deployment complete! Waiting for ALB..."
+    wait_for_alb
 }
 
 # Help
@@ -202,13 +266,20 @@ show_help() {
     echo "  phase2      - Deploy Phase 2 (add notification-service)"
     echo "  url         - Get the ingress URL"
     echo "  status      - Show current deployment status"
-    echo "  deploy      - Full deployment (teardown + phase1 + phase2)"
+    echo "  deploy      - Full deployment with prompts (teardown + phase1 + phase2)"
+    echo "  quick       - Quick deploy without prompts (teardown + phase1 + phase2)"
     echo "  help        - Show this help"
     echo ""
     echo "Environment variables required:"
     echo "  AWS_ACCESS_KEY_ID"
     echo "  AWS_SECRET_ACCESS_KEY"
     echo "  AWS_DEFAULT_REGION (default: us-east-2)"
+    echo ""
+    echo "Example:"
+    echo "  export AWS_ACCESS_KEY_ID='...'"
+    echo "  export AWS_SECRET_ACCESS_KEY='...'"
+    echo "  export AWS_DEFAULT_REGION='us-east-2'"
+    echo "  $0 quick"
 }
 
 # Main
@@ -244,6 +315,9 @@ case "${1:-help}" in
         ;;
     deploy)
         full_deploy
+        ;;
+    quick)
+        quick_deploy
         ;;
     help|--help|-h)
         show_help
