@@ -221,16 +221,12 @@ status() {
     kubectl get ingress -n devops-agent-demo 2>/dev/null || echo "No ingress found"
 }
 
-# Full deployment
+# Full deployment (no prompts)
 full_deploy() {
     check_prerequisites
     configure_kubeconfig
     teardown
     deploy_phase1
-    get_url
-
-    echo ""
-    read -p "Press Enter to deploy Phase 2 (notification-service)..."
     deploy_phase2
 
     # Final summary with ALB URL
