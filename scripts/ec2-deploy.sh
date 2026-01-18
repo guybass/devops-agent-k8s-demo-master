@@ -239,20 +239,6 @@ full_deploy() {
     wait_for_alb
 }
 
-# Quick deploy (no prompts, both phases)
-quick_deploy() {
-    check_prerequisites
-    configure_kubeconfig
-    teardown
-    deploy_phase1
-    deploy_phase2
-
-    # Final summary with ALB URL
-    echo ""
-    log_info "Deployment complete! Waiting for ALB..."
-    wait_for_alb
-}
-
 # Help
 show_help() {
     echo "EKS Deployment Script"
@@ -266,8 +252,7 @@ show_help() {
     echo "  phase2      - Deploy Phase 2 (add notification-service)"
     echo "  url         - Get the ingress URL"
     echo "  status      - Show current deployment status"
-    echo "  deploy      - Full deployment with prompts (teardown + phase1 + phase2)"
-    echo "  quick       - Quick deploy without prompts (teardown + phase1 + phase2)"
+    echo "  deploy      - Full deployment (teardown + phase1 + phase2)"
     echo "  help        - Show this help"
     echo ""
     echo "Environment variables required:"
@@ -279,7 +264,7 @@ show_help() {
     echo "  export AWS_ACCESS_KEY_ID='...'"
     echo "  export AWS_SECRET_ACCESS_KEY='...'"
     echo "  export AWS_DEFAULT_REGION='us-east-2'"
-    echo "  $0 quick"
+    echo "  $0 deploy"
 }
 
 # Main
@@ -315,9 +300,6 @@ case "${1:-help}" in
         ;;
     deploy)
         full_deploy
-        ;;
-    quick)
-        quick_deploy
         ;;
     help|--help|-h)
         show_help
