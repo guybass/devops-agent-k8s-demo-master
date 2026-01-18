@@ -231,8 +231,8 @@ full_deploy() {
 
     # Final summary with ALB URL
     echo ""
-    log_info "Deployment complete! Waiting for ALB..."
-    wait_for_alb
+    log_info "Deployment complete!"
+    echo "ALB_URL=http://$(kubectl get ingress -n devops-agent-demo -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')"
 }
 
 # Help
