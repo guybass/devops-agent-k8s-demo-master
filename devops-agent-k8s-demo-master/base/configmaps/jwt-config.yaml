@@ -1,0 +1,15 @@
+# JWT configuration for auth-related services
+# The actual secret key is stored in Secrets, not here
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jwt-config
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/component: jwt-config
+data:
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRE_MINUTES: "15"
+  JWT_REFRESH_EXPIRE_DAYS: "7"

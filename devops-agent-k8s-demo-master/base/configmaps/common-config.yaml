@@ -1,0 +1,38 @@
+# Common configuration shared across all services
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: common-config
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/component: config
+data:
+  # Environment settings
+  ENVIRONMENT: "pre-prod"
+  LOG_LEVEL: "INFO"
+  METRICS_ENABLED: "true"
+
+  # Service discovery - internal service URLs
+  # These are Kubernetes DNS names for inter-service communication
+  API_GATEWAY_URL: "http://api-gateway:8080"
+  AUTH_SERVICE_URL: "http://auth-service:8002"
+  USER_SERVICE_URL: "http://user-service:8001"
+  PRODUCT_SERVICE_URL: "http://product-service:8004"
+  ORDER_SERVICE_URL: "http://order-service:8003"
+  PAYMENT_SERVICE_URL: "http://payment-service:8005"
+  NOTIFICATION_SERVICE_URL: "http://notification-service:8006"
+  EVENT_PROCESSOR_URL: "http://event-processor:8010"
+  ANALYTICS_SERVICE_URL: "http://analytics-service:8011"
+  REPORT_GENERATOR_URL: "http://report-generator:8012"
+  DATA_AGGREGATOR_URL: "http://data-aggregator:8013"
+  IMAGE_PROCESSOR_URL: "http://image-processor:8020"
+
+  # Infrastructure service URLs
+  DB_PROXY_URL: "http://db-proxy:5433"
+  CACHE_MANAGER_URL: "http://cache-manager:6380"
+  CONFIG_SERVICE_URL: "http://config-service:9093"
+  METRICS_COLLECTOR_URL: "http://metrics-collector:9090"
+  QUEUE_MONITOR_URL: "http://queue-monitor:9091"
+  HEALTH_CHECKER_URL: "http://health-checker:9092"

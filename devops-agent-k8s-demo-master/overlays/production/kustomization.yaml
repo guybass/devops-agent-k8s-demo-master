@@ -1,0 +1,115 @@
+# Production environment overlay
+# Full production configuration with enhanced security and resources
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: devops-agent-demo
+
+namePrefix: prod-
+nameSuffix: ""
+
+commonLabels:
+  environment: production
+
+resources:
+  - ../../base
+
+# Increase replicas for critical services in production
+patches:
+  # API Gateway - higher replicas
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 4
+    target:
+      kind: Deployment
+      name: api-gateway
+
+  # Payment service - higher replicas for critical transactions
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: payment-service
+
+  # Order service - higher replicas
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: order-service
+
+  # Web UI - higher replicas for user-facing traffic
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: web-ui
+
+  # DB Proxy - ensure high availability
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: db-proxy
+
+# ConfigMap patches for production environment
+configMapGenerator:
+  - name: common-config
+    behavior: merge
+    literals:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=WARN
+      - METRICS_ENABLED=true
+
+# Production uses semantic version tags or SHA
+images:
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-web-ui
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-admin-dashboard
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-api-gateway
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-auth-service
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-user-service
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-product-service
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-order-service
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-payment-service
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-notification-service
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-event-processor
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-analytics-service
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-report-generator
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-data-aggregator
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-image-processor
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-db-proxy
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-cache-manager
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-config-service
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-metrics-collector
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-queue-monitor
+    newTag: v1.0.0
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-health-checker
+    newTag: v1.0.0

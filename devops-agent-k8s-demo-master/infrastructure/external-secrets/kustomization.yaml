@@ -1,0 +1,25 @@
+# Kustomization for External Secrets Operator
+# Helm Chart: external-secrets/external-secrets  Version: 0.12.1
+#
+# To regenerate manifests:
+#   helm template external-secrets external-secrets/external-secrets \
+#     --namespace external-secrets --version 0.12.1 \
+#     --set installCRDs=true \
+#     --set webhook.podDisruptionBudget.enabled=true \
+#     --set webhook.podDisruptionBudget.minAvailable=1 \
+#     --set certController.podDisruptionBudget.enabled=true \
+#     --set certController.podDisruptionBudget.minAvailable=1 \
+#     --set resources.requests.cpu=10m \
+#     --set resources.requests.memory=64Mi \
+#     --set resources.limits.cpu=100m \
+#     --set resources.limits.memory=128Mi \
+#     --set securityContext.runAsNonRoot=true \
+#     --set serviceAccount.create=true \
+#     --set serviceAccount.name=external-secrets > manifests.yaml
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - manifests.yaml

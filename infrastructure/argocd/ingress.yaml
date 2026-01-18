@@ -1,0 +1,51 @@
+# ArgoCD ALB Ingress
+# Exposes ArgoCD UI via AWS Application Load Balancer
+#
+# Configuration:
+#   - Path-based routing on /argocd
+#   - HTTP listener (TLS terminated at ALB or handled upstream)
+#   - IP whitelist for security
+#   - Internet-facing for external access
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-server
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/component: server
+  annotations:
+    # ALB Controller annotations
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+
+    # Listener configuration - HTTP on port 80
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+
+    # Health check configuration
+    alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+
+    # IP whitelist for security - restrict access to known IPs
+    alb.ingress.kubernetes.io/inbound-cidrs: "79.181.131.147/32,79.181.155.88/32,79.181.191.131/32,79.181.191.135/32"
+
+    # Group with other ingresses if needed (uncomment to share ALB)
+    # alb.ingress.kubernetes.io/group.name: demo-pre-prod
+
+    # Tags for AWS resource identification
+    alb.ingress.kubernetes.io/tags: Environment=pre-prod,Application=argocd,Cluster=demo-pre-prod-cluster
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 80

@@ -1,0 +1,17 @@
+# Redis/ElastiCache configuration for cache-manager service
+# Sensitive credentials (if any) are stored in Secrets
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/component: redis-config
+data:
+  # Redis connection settings (non-sensitive)
+  # Host should point to ElastiCache endpoint from Terraform output
+  REDIS_PORT: "6379"
+  REDIS_MAX_CONNECTIONS: "100"
+  DEFAULT_TTL_SECONDS: "3600"

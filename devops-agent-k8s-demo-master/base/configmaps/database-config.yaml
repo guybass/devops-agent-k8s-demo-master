@@ -1,0 +1,21 @@
+# Database configuration for services that connect to RDS PostgreSQL
+# Sensitive credentials are stored in Secrets, not here
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: database-config
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/component: database-config
+data:
+  # Database connection settings (non-sensitive)
+  # Host should point to RDS endpoint from Terraform output
+  DB_PORT: "5432"
+  DB_NAME: "appdb"
+
+  # Connection pool settings
+  DB_POOL_MIN_SIZE: "20"
+  DB_POOL_MAX_SIZE: "100"
+  DB_COMMAND_TIMEOUT: "30"

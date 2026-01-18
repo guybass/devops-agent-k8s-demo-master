@@ -1,0 +1,20 @@
+# Kubernetes Service for Phase 2 - Notification Service Only
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: notification-service
+  ports:
+    - name: http
+      port: 8006
+      targetPort: 8006
+      protocol: TCP

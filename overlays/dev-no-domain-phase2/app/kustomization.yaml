@@ -1,0 +1,95 @@
+# Application workloads for dev-no-domain-phase2 environment
+# This sub-kustomization deploys ONLY the notification-service
+# Depends on Phase 1 for shared resources (ConfigMaps, Secrets, ServiceAccounts)
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: devops-agent-demo
+
+namePrefix: dev-
+nameSuffix: ""
+
+resources:
+  - ../../../base/phase2
+
+# Set notification-service to 1 replica for dev environment
+replicas:
+  - name: notification-service
+    count: 1
+
+patches:
+  # Fix serviceAccountName and ConfigMap/Secret references to use dev- prefix
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: notification-service
+      spec:
+        template:
+          spec:
+            serviceAccountName: dev-backend-sa
+            containers:
+              - name: notification-service
+                env:
+                  - name: ENVIRONMENT
+                    valueFrom:
+                      configMapKeyRef:
+                        name: dev-common-config
+                        key: ENVIRONMENT
+                  - name: LOG_LEVEL
+                    valueFrom:
+                      configMapKeyRef:
+                        name: dev-common-config
+                        key: LOG_LEVEL
+                  - name: METRICS_ENABLED
+                    valueFrom:
+                      configMapKeyRef:
+                        name: dev-common-config
+                        key: METRICS_ENABLED
+                  - name: USER_SERVICE_URL
+                    valueFrom:
+                      configMapKeyRef:
+                        name: dev-common-config
+                        key: USER_SERVICE_URL
+                  - name: DB_PROXY_URL
+                    valueFrom:
+                      configMapKeyRef:
+                        name: dev-common-config
+                        key: DB_PROXY_URL
+                  - name: METRICS_COLLECTOR_URL
+                    valueFrom:
+                      configMapKeyRef:
+                        name: dev-common-config
+                        key: METRICS_COLLECTOR_URL
+                  - name: RABBITMQ_URL
+                    valueFrom:
+                      secretKeyRef:
+                        name: dev-rabbitmq-credentials
+                        key: RABBITMQ_URL
+    target:
+      kind: Deployment
+      name: notification-service
+
+  # Reduce resource requests/limits for dev
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "25m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "64Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "100m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "128Mi"
+    target:
+      kind: Deployment
+      name: notification-service
+
+# Update image tag for development
+images:
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-notification-service
+    newTag: dev

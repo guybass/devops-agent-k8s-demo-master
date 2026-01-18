@@ -1,0 +1,391 @@
+# Kubernetes Services for all microservices
+# Services provide stable network endpoints for Pods
+---
+# Frontend Services
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-ui
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: web-ui
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: web-ui
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-dashboard
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: admin-dashboard
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: admin-dashboard
+  ports:
+    - name: http
+      port: 3001
+      targetPort: 3001
+      protocol: TCP
+---
+# API Gateway Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: api-gateway
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+# Backend Services
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: auth-service
+  ports:
+    - name: http
+      port: 8002
+      targetPort: 8002
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: user-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: user-service
+  ports:
+    - name: http
+      port: 8001
+      targetPort: 8001
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: product-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: product-service
+  ports:
+    - name: http
+      port: 8004
+      targetPort: 8004
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: order-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: order-service
+  ports:
+    - name: http
+      port: 8003
+      targetPort: 8003
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: payment-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: payment-service
+  ports:
+    - name: http
+      port: 8005
+      targetPort: 8005
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: notification-service
+  ports:
+    - name: http
+      port: 8006
+      targetPort: 8006
+      protocol: TCP
+---
+# Processing Services
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: event-processor
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: event-processor
+    app.kubernetes.io/component: processing
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: event-processor
+  ports:
+    - name: http
+      port: 8010
+      targetPort: 8010
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-service
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: analytics-service
+    app.kubernetes.io/component: processing
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: analytics-service
+  ports:
+    - name: http
+      port: 8011
+      targetPort: 8011
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: report-generator
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: report-generator
+    app.kubernetes.io/component: processing
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: report-generator
+  ports:
+    - name: http
+      port: 8012
+      targetPort: 8012
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-aggregator
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: data-aggregator
+    app.kubernetes.io/component: processing
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: data-aggregator
+  ports:
+    - name: http
+      port: 8013
+      targetPort: 8013
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: image-processor
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: image-processor
+    app.kubernetes.io/component: processing
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: image-processor
+  ports:
+    - name: http
+      port: 8020
+      targetPort: 8020
+      protocol: TCP
+---
+# Infrastructure Services
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: db-proxy
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: db-proxy
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: db-proxy
+  ports:
+    - name: http
+      port: 5433
+      targetPort: 5433
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cache-manager
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: cache-manager
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: cache-manager
+  ports:
+    - name: http
+      port: 6380
+      targetPort: 6380
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-service
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: config-service
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: config-service
+  ports:
+    - name: http
+      port: 9093
+      targetPort: 9093
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: metrics-collector
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: metrics-collector
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: metrics-collector
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: queue-monitor
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: queue-monitor
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: queue-monitor
+  ports:
+    - name: http
+      port: 9091
+      targetPort: 9091
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: health-checker
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: health-checker
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: health-checker
+  ports:
+    - name: http
+      port: 9092
+      targetPort: 9092
+      protocol: TCP

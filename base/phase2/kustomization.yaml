@@ -1,0 +1,26 @@
+# Kustomization for Phase 2 - Notification Service Only
+# This phase deploys only the notification-service
+# Depends on Phase 1 for shared resources (ConfigMaps, Secrets, ServiceAccounts)
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: devops-agent-demo
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: devops-agent-demo
+      app.kubernetes.io/managed-by: kustomize
+      deployment-phase: "2"
+    includeSelectors: false
+
+resources:
+  # Notification Service Deployment
+  - ../deployments/backend/notification-service.yaml
+  # Notification Service Service
+  - services-phase2.yaml
+
+# Images
+images:
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-notification-service
+    newTag: latest

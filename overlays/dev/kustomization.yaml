@@ -1,0 +1,96 @@
+# Development environment overlay
+# Uses reduced replicas and resources for cost optimization
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: devops-agent-demo
+
+namePrefix: dev-
+nameSuffix: ""
+
+commonLabels:
+  environment: development
+
+resources:
+  - ../../base
+
+# Patches to reduce resource usage in development
+patches:
+  # Reduce replicas for all deployments in dev
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+    target:
+      kind: Deployment
+      labelSelector: "app.kubernetes.io/part-of=devops-agent-demo"
+
+  # Reduce resource requests/limits for dev
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "25m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "64Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "100m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "128Mi"
+    target:
+      kind: Deployment
+      labelSelector: "app.kubernetes.io/component=frontend"
+
+# ConfigMap patches for development environment
+configMapGenerator:
+  - name: common-config
+    behavior: merge
+    literals:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+
+# Update image tags for development
+images:
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-web-ui
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-admin-dashboard
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-api-gateway
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-auth-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-user-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-product-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-order-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-payment-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-notification-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-event-processor
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-analytics-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-report-generator
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-data-aggregator
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-image-processor
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-db-proxy
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-cache-manager
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-config-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-metrics-collector
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-queue-monitor
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-health-checker
+    newTag: dev

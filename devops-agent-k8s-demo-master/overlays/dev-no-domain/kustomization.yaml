@@ -1,0 +1,64 @@
+# Development environment overlay - NO DOMAIN (Path-Based Routing)
+# Uses the ALB's auto-generated DNS name with path-based routing
+#
+# This overlay deploys:
+#   1. Infrastructure (External Secrets Operator, AWS Load Balancer Controller)
+#   2. Application workloads (all microservices)
+#
+# Deploy with: kubectl apply -k overlays/dev-no-domain/
+#
+# After deployment, get the ALB DNS name:
+#   kubectl get ingress -n devops-agent-demo -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}'
+#
+# Access URLs:
+#   - Web UI:          http://<ALB_DNS>/
+#   - Admin Dashboard: http://<ALB_DNS>/admin/
+#   - API Gateway:     http://<ALB_DNS>/api/
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# NOTE: We do NOT set global namespace here because we have resources
+# in multiple namespaces (external-secrets, kube-system, devops-agent-demo)
+
+resources:
+  # Infrastructure - these have their own namespaces defined in manifests
+  - ../../infrastructure
+  # Application - wrapped with namespace transformation
+  - app/
+  # Shared configuration for allowed CIDRs (single source of truth)
+  - allowed-cidrs.yaml
+
+labels:
+  - pairs:
+      environment: development
+      domain-mode: none
+    includeSelectors: false
+
+# Replacements: Inject allowed CIDRs into all ingresses from single source
+# This ensures the app ingress and ArgoCD ingress always have the same CIDR list
+replacements:
+  # Replace inbound-cidrs annotation in the app ingress
+  - source:
+      kind: ConfigMap
+      name: allowed-cidrs-config
+      fieldPath: data.ALLOWED_CIDRS
+    targets:
+      - select:
+          kind: Ingress
+          name: devops-agent-demo-ingress
+          namespace: devops-agent-demo
+        fieldPaths:
+          - metadata.annotations.[alb.ingress.kubernetes.io/inbound-cidrs]
+  # Replace inbound-cidrs annotation in the ArgoCD ingress
+  - source:
+      kind: ConfigMap
+      name: allowed-cidrs-config
+      fieldPath: data.ALLOWED_CIDRS
+    targets:
+      - select:
+          kind: Ingress
+          name: argocd-server
+          namespace: argocd
+        fieldPaths:
+          - metadata.annotations.[alb.ingress.kubernetes.io/inbound-cidrs]

@@ -1,0 +1,164 @@
+# DB Proxy Deployment
+# Database connection proxy - connects to RDS PostgreSQL
+# This is a critical infrastructure service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-proxy
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: db-proxy
+    app.kubernetes.io/instance: db-proxy-pre-prod
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  minReadySeconds: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: db-proxy
+      app.kubernetes.io/instance: db-proxy-pre-prod
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: db-proxy
+        app.kubernetes.io/instance: db-proxy-pre-prod
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: infrastructure
+        app.kubernetes.io/part-of: devops-agent-demo
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5433"
+    spec:
+      serviceAccountName: infrastructure-sa
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: db-proxy
+          image: 852140462703.dkr.ecr.us-east-1.amazonaws.com/devops-agent-demo-db-proxy:1.0.2
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 5433
+              protocol: TCP
+          env:
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: ENVIRONMENT
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: LOG_LEVEL
+            - name: METRICS_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: METRICS_ENABLED
+            - name: METRICS_COLLECTOR_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: METRICS_COLLECTOR_URL
+            # Database connection from secrets
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: database-credentials
+                  key: DB_HOST
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: database-credentials
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: database-credentials
+                  key: DB_PASSWORD
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: database-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: database-config
+                  key: DB_NAME
+            # Connection pool settings
+            - name: DB_POOL_MIN_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: database-config
+                  key: DB_POOL_MIN_SIZE
+            - name: DB_POOL_MAX_SIZE
+              valueFrom:
+                configMapKeyRef:
+                  name: database-config
+                  key: DB_POOL_MAX_SIZE
+            - name: DB_COMMAND_TIMEOUT
+              valueFrom:
+                configMapKeyRef:
+                  name: database-config
+                  key: DB_COMMAND_TIMEOUT
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5433
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5433
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 20"]
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: db-proxy
+              topologyKey: kubernetes.io/hostname

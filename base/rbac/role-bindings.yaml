@@ -1,0 +1,109 @@
+# RoleBindings to connect ServiceAccounts to Roles
+---
+# Bind config-reader role to backend ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backend-config-reader
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/component: rbac
+subjects:
+  - kind: ServiceAccount
+    name: backend-sa
+    namespace: devops-agent-demo
+roleRef:
+  kind: Role
+  name: config-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# Bind config-reader role to processing ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: processing-config-reader
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/component: rbac
+subjects:
+  - kind: ServiceAccount
+    name: processing-sa
+    namespace: devops-agent-demo
+roleRef:
+  kind: Role
+  name: config-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# Bind config-reader role to infrastructure ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: infrastructure-config-reader
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/component: rbac
+subjects:
+  - kind: ServiceAccount
+    name: infrastructure-sa
+    namespace: devops-agent-demo
+roleRef:
+  kind: Role
+  name: config-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+# Bind health-checker-role to infrastructure ServiceAccount (for health-checker service)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: health-checker-binding
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/component: rbac
+subjects:
+  - kind: ServiceAccount
+    name: infrastructure-sa
+    namespace: devops-agent-demo
+roleRef:
+  kind: Role
+  name: health-checker-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Bind metrics-collector-role to infrastructure ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: metrics-collector-binding
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/component: rbac
+subjects:
+  - kind: ServiceAccount
+    name: infrastructure-sa
+    namespace: devops-agent-demo
+roleRef:
+  kind: Role
+  name: metrics-collector-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Bind config-reader role to api-gateway ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: api-gateway-config-reader
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/component: rbac
+subjects:
+  - kind: ServiceAccount
+    name: api-gateway-sa
+    namespace: devops-agent-demo
+roleRef:
+  kind: Role
+  name: config-reader
+  apiGroup: rbac.authorization.k8s.io

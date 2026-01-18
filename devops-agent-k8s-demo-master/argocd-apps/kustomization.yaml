@@ -1,0 +1,15 @@
+# ArgoCD Applications Kustomization
+# Contains ArgoCD Application and AppProject definitions
+#
+# This directory manages what ArgoCD deploys (the "app of apps" pattern).
+# Deploy after ArgoCD infrastructure is ready:
+#   kubectl apply -k argocd-apps/
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - project.yaml
+  - app-dev-no-domain.yaml

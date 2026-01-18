@@ -1,0 +1,69 @@
+# ArgoCD Application - dev-no-domain Phase 2 (Notification Service)
+# Deploys ONLY the notification-service
+#
+# MANUAL SYNC: Auto-sync is disabled. You must manually trigger sync via:
+#   - ArgoCD UI: Click "Sync" button
+#   - ArgoCD CLI: argocd app sync devops-agent-demo-dev-notification
+#
+# Prerequisites:
+#   - Phase 1 must be deployed and healthy FIRST
+#   - Phase 1 provides: Namespace, ConfigMaps, Secrets, ServiceAccounts
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: devops-agent-demo-dev-notification
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: devops-agent-demo-dev-notification
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: application
+    environment: dev
+    deployment-phase: "2"
+  # Finalizer ensures proper cleanup of deployed resources
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  # Project reference
+  project: devops-agent-demo
+
+  # Source repository configuration
+  source:
+    repoURL: "git@github.com:snirkap/devops-agent-k8s-demo.git"
+    targetRevision: HEAD
+    path: overlays/dev-no-domain-phase2
+
+  # Destination cluster and namespace
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: devops-agent-demo
+
+  # Sync policy configuration
+  # NOTE: No 'automated' block = MANUAL sync only
+  syncPolicy:
+    syncOptions:
+      # Do NOT create namespace - Phase 1 creates it
+      - CreateNamespace=false
+      # Apply out-of-sync resources only
+      - ApplyOutOfSyncOnly=true
+      # Respect ignore differences annotations
+      - RespectIgnoreDifferences=true
+      # Server-side apply for better conflict resolution
+      - ServerSideApply=true
+    # Retry configuration for failed syncs
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Ignore differences for fields that change at runtime
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+  # Revision history limit
+  revisionHistoryLimit: 10

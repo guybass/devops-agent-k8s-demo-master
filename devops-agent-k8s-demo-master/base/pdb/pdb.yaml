@@ -1,0 +1,210 @@
+# PodDisruptionBudgets for High Availability
+# PDBs ensure minimum availability during voluntary disruptions (node drains, upgrades, etc.)
+---
+# API Gateway PDB - Critical service, ensure at least 2 pods always available
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: api-gateway
+    app.kubernetes.io/component: gateway
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+---
+# Web UI PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: web-ui-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: web-ui
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: web-ui
+---
+# Admin Dashboard PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: admin-dashboard-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: admin-dashboard
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: admin-dashboard
+---
+# Auth Service PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-service-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: auth-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: auth-service
+---
+# User Service PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: user-service-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: user-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: user-service
+---
+# Product Service PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: product-service-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: product-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: product-service
+---
+# Order Service PDB - Critical for business operations
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: order-service-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: order-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: order-service
+---
+# Payment Service PDB - Critical for business operations
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: payment-service-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: payment-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: payment-service
+---
+# Notification Service PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: notification-service-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: notification-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: notification-service
+---
+# DB Proxy PDB - Critical infrastructure
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: db-proxy-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: db-proxy
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: db-proxy
+---
+# Cache Manager PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cache-manager-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: cache-manager
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cache-manager
+---
+# Event Processor PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: event-processor-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: event-processor
+    app.kubernetes.io/component: processing
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: event-processor
+---
+# Analytics Service PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: analytics-service-pdb
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: analytics-service
+    app.kubernetes.io/component: processing
+    app.kubernetes.io/part-of: devops-agent-demo
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: analytics-service

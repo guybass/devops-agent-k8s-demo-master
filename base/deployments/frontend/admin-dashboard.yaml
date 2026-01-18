@@ -1,0 +1,119 @@
+# Admin Dashboard Frontend Deployment
+# React-based admin application served via NGINX
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-dashboard
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: admin-dashboard
+    app.kubernetes.io/instance: admin-dashboard-pre-prod
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: admin-dashboard
+      app.kubernetes.io/instance: admin-dashboard-pre-prod
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: admin-dashboard
+        app.kubernetes.io/instance: admin-dashboard-pre-prod
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/part-of: devops-agent-demo
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3001"
+    spec:
+      serviceAccountName: frontend-sa
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        runAsGroup: 101
+        fsGroup: 101
+      containers:
+        - name: admin-dashboard
+          image: 852140462703.dkr.ecr.us-east-2.amazonaws.com/devops-agent-demo-admin-dashboard:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 3001
+              protocol: TCP
+          env:
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: ENVIRONMENT
+            - name: API_GATEWAY_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: API_GATEWAY_URL
+            # API_GATEWAY_HOST is used by nginx to proxy /api/ requests
+            # This should be set to the Kubernetes service name of the API gateway
+            - name: API_GATEWAY_HOST
+              value: "dev-api-gateway"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+        - name: nginx-conf
+          emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: admin-dashboard
+                topologyKey: kubernetes.io/hostname

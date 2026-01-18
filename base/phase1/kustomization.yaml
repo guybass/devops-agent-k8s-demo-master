@@ -1,0 +1,118 @@
+# Kustomization for Phase 1 - All services EXCEPT notification-service
+# This phase deploys core infrastructure, frontend, gateway, backend (minus notification),
+# processing, and infrastructure services
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: devops-agent-demo
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: devops-agent-demo
+      app.kubernetes.io/managed-by: kustomize
+      deployment-phase: "1"
+    includeSelectors: false
+
+resources:
+  # Namespace
+  - ../namespace/namespace.yaml
+
+  # RBAC
+  - ../rbac/service-accounts.yaml
+  - ../rbac/roles.yaml
+  - ../rbac/role-bindings.yaml
+
+  # ConfigMaps
+  - ../configmaps/common-config.yaml
+  - ../configmaps/database-config.yaml
+  - ../configmaps/redis-config.yaml
+  - ../configmaps/jwt-config.yaml
+
+  # Secrets
+  - ../secrets/secrets.yaml
+
+  # Frontend Deployments
+  - ../deployments/frontend/web-ui.yaml
+  - ../deployments/frontend/admin-dashboard.yaml
+
+  # Gateway Deployment
+  - ../deployments/gateway/api-gateway.yaml
+
+  # Backend Deployments (EXCLUDING notification-service)
+  - ../deployments/backend/auth-service.yaml
+  - ../deployments/backend/user-service.yaml
+  - ../deployments/backend/product-service.yaml
+  - ../deployments/backend/order-service.yaml
+  - ../deployments/backend/payment-service.yaml
+
+  # Processing Deployments
+  - ../deployments/processing/event-processor.yaml
+  - ../deployments/processing/analytics-service.yaml
+  - ../deployments/processing/report-generator.yaml
+  - ../deployments/processing/data-aggregator.yaml
+  - ../deployments/processing/image-processor.yaml
+
+  # Infrastructure Deployments
+  - ../deployments/infrastructure/db-proxy.yaml
+  - ../deployments/infrastructure/cache-manager.yaml
+  - ../deployments/infrastructure/config-service.yaml
+  - ../deployments/infrastructure/metrics-collector.yaml
+  - ../deployments/infrastructure/queue-monitor.yaml
+  - ../deployments/infrastructure/health-checker.yaml
+
+  # Services (without notification-service)
+  - services-phase1.yaml
+
+  # Ingress
+  - ../ingress/ingress.yaml
+
+  # HorizontalPodAutoscalers
+  - ../hpa/hpa.yaml
+
+  # PodDisruptionBudgets
+  - ../pdb/pdb.yaml
+
+  # NetworkPolicies
+  - ../networkpolicies/network-policies.yaml
+
+# Images - update these with your actual ECR repository URLs
+images:
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-web-ui
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-admin-dashboard
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-api-gateway
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-auth-service
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-user-service
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-product-service
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-order-service
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-payment-service
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-event-processor
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-analytics-service
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-report-generator
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-data-aggregator
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-image-processor
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-db-proxy
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-cache-manager
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-config-service
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-metrics-collector
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-queue-monitor
+    newTag: latest
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-health-checker
+    newTag: latest

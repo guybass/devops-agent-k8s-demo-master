@@ -1,0 +1,71 @@
+# Kustomization for ArgoCD
+# Helm Chart: argo/argo-cd  Version: 7.7.10
+#
+# Components:
+#   - ArgoCD core components (server, repo-server, application-controller, etc.)
+#   - SecretStore for AWS Secrets Manager access
+#   - ExternalSecret for GitHub SSH repository credentials
+#   - ALB Ingress for UI access
+#   - Redis secret (pre-created to avoid init job race condition)
+#
+# To regenerate manifests:
+#   helm template argocd argo/argo-cd \
+#     --namespace argocd --version 7.7.10 \
+#     --values values.yaml > manifests.yaml
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - namespace.yaml
+  - external-secrets-sa.yaml  # ServiceAccount with IRSA for External Secrets
+  - redis-secret.yaml         # Must be before manifests.yaml - creates Redis auth secret
+  - manifests.yaml
+  - secret-store.yaml
+  - repository-secret.yaml
+  - ingress.yaml
+
+# Remove the redis-secret-init Job and its RBAC resources since we manage the secret ourselves
+patches:
+  # Delete the redis-secret-init Job
+  - target:
+      kind: Job
+      name: argocd-redis-secret-init
+    patch: |
+      $patch: delete
+      apiVersion: batch/v1
+      kind: Job
+      metadata:
+        name: argocd-redis-secret-init
+  # Delete the redis-secret-init ServiceAccount
+  - target:
+      kind: ServiceAccount
+      name: argocd-redis-secret-init
+    patch: |
+      $patch: delete
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: argocd-redis-secret-init
+  # Delete the redis-secret-init Role
+  - target:
+      kind: Role
+      name: argocd-redis-secret-init
+    patch: |
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        name: argocd-redis-secret-init
+  # Delete the redis-secret-init RoleBinding
+  - target:
+      kind: RoleBinding
+      name: argocd-redis-secret-init
+    patch: |
+      $patch: delete
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: RoleBinding
+      metadata:
+        name: argocd-redis-secret-init

@@ -1,0 +1,292 @@
+# NetworkPolicies for workload isolation
+# These policies implement a zero-trust network model within the namespace
+# Note: NetworkPolicies require a CNI that supports them (Calico, Cilium, etc.)
+---
+# Default deny all ingress traffic in the namespace
+# This is the foundation of zero-trust networking
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# Allow ingress traffic to frontend services from anywhere (for ingress controller)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-ingress
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow from ingress controller namespace (adjust namespace name as needed)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+    # Allow from ALB Ingress Controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: aws-load-balancer-controller
+    # Allow from any source (for ALB target type ip)
+    - ports:
+        - protocol: TCP
+          port: 3000
+        - protocol: TCP
+          port: 3001
+---
+# Allow ingress traffic to API Gateway from anywhere (for ingress controller)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-gateway-ingress
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8080
+---
+# Allow API Gateway to communicate with backend services
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-from-gateway
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+      ports:
+        - protocol: TCP
+          port: 8001  # user-service
+        - protocol: TCP
+          port: 8002  # auth-service
+        - protocol: TCP
+          port: 8003  # order-service
+        - protocol: TCP
+          port: 8004  # product-service
+        - protocol: TCP
+          port: 8005  # payment-service
+        - protocol: TCP
+          port: 8006  # notification-service
+---
+# Allow inter-backend service communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-internal
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: processing
+---
+# Allow processing services to communicate with backend and infrastructure
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-processing-communication
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: processing
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: processing
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+---
+# Allow all services to communicate with infrastructure services
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-infrastructure-access
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: infrastructure
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: backend
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: processing
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: infrastructure
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: api-gateway
+      ports:
+        - protocol: TCP
+          port: 5433  # db-proxy
+        - protocol: TCP
+          port: 6380  # cache-manager
+        - protocol: TCP
+          port: 9090  # metrics-collector
+        - protocol: TCP
+          port: 9091  # queue-monitor
+        - protocol: TCP
+          port: 9092  # health-checker
+        - protocol: TCP
+          port: 9093  # config-service
+---
+# Allow Prometheus to scrape metrics from all pods
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scraping
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: prometheus
+---
+# Allow DNS resolution (kube-dns/CoreDNS)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+# Allow egress to AWS services (RDS, ElastiCache, S3, Secrets Manager, etc.)
+# In a real scenario, you would use VPC endpoints and restrict to specific CIDR blocks
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-aws-services-egress
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: infrastructure
+  policyTypes:
+    - Egress
+  egress:
+    # Allow egress to RDS (PostgreSQL)
+    - ports:
+        - protocol: TCP
+          port: 5432
+    # Allow egress to ElastiCache (Redis)
+    - ports:
+        - protocol: TCP
+          port: 6379
+    # Allow HTTPS egress for AWS API calls
+    - ports:
+        - protocol: TCP
+          port: 443
+---
+# Allow egress within the namespace for inter-service communication
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-internal-egress
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/component: network-policy
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector: {}

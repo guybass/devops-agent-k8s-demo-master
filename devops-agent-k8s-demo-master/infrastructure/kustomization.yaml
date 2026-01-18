@@ -1,0 +1,15 @@
+# Infrastructure Kustomization
+# Deploys foundational infrastructure components:
+#   1. External Secrets Operator - Syncs secrets from AWS Secrets Manager
+#   2. AWS Load Balancer Controller - Manages ALB/NLB for Ingress and Services
+#
+# These are prerequisites for the application workloads.
+# Can be deployed standalone: kubectl apply -k infrastructure/
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - external-secrets
+  - aws-load-balancer-controller
+  - argocd

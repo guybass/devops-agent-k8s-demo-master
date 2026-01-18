@@ -1,0 +1,168 @@
+# Application workloads for dev-no-domain-phase1 environment
+# This sub-kustomization applies namespace and other transformations
+# only to the application resources, not infrastructure
+# NOTE: This phase excludes notification-service
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: devops-agent-demo
+
+namePrefix: dev-
+nameSuffix: ""
+
+resources:
+  - ../../../base/phase1
+
+# Set all deployments to 1 replica for dev environment
+# NOTE: notification-service is NOT included in phase1
+replicas:
+  - name: admin-dashboard
+    count: 1
+  - name: analytics-service
+    count: 1
+  - name: api-gateway
+    count: 1
+  - name: auth-service
+    count: 1
+  - name: cache-manager
+    count: 1
+  - name: config-service
+    count: 1
+  - name: data-aggregator
+    count: 1
+  - name: db-proxy
+    count: 1
+  - name: event-processor
+    count: 1
+  - name: health-checker
+    count: 1
+  - name: image-processor
+    count: 1
+  - name: metrics-collector
+    count: 1
+  - name: order-service
+    count: 1
+  - name: payment-service
+    count: 1
+  - name: product-service
+    count: 1
+  - name: queue-monitor
+    count: 1
+  - name: report-generator
+    count: 1
+  - name: user-service
+    count: 1
+  - name: web-ui
+    count: 1
+
+patches:
+  # DELETE all HPAs - not needed in dev environment with fixed replicas
+  - target:
+      kind: HorizontalPodAutoscaler
+    patch: |
+      $patch: delete
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata:
+        name: not-used
+
+  # Reduce resource requests/limits for dev
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: "25m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "64Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "100m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "128Mi"
+    target:
+      kind: Deployment
+      labelSelector: "app.kubernetes.io/component=frontend"
+
+  # Replace ingress with path-based routing (no host required)
+  - path: ingress-patch.yaml
+
+  # Patch common-config for dev environment
+  # IMPORTANT: Service URLs must use dev- prefix because namePrefix is applied to all services
+  - patch: |-
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: common-config
+        namespace: devops-agent-demo
+      data:
+        ENVIRONMENT: "development"
+        LOG_LEVEL: "DEBUG"
+        BASE_PATH_WEB: "/"
+        BASE_PATH_ADMIN: "/admin"
+        BASE_PATH_API: "/api"
+        # Service URLs with dev- prefix to match namePrefix transformation
+        API_GATEWAY_URL: "http://dev-api-gateway:8080"
+        AUTH_SERVICE_URL: "http://dev-auth-service:8002"
+        USER_SERVICE_URL: "http://dev-user-service:8001"
+        PRODUCT_SERVICE_URL: "http://dev-product-service:8004"
+        ORDER_SERVICE_URL: "http://dev-order-service:8003"
+        PAYMENT_SERVICE_URL: "http://dev-payment-service:8005"
+        NOTIFICATION_SERVICE_URL: "http://dev-notification-service:8006"
+        EVENT_PROCESSOR_URL: "http://dev-event-processor:8010"
+        ANALYTICS_SERVICE_URL: "http://dev-analytics-service:8011"
+        REPORT_GENERATOR_URL: "http://dev-report-generator:8012"
+        DATA_AGGREGATOR_URL: "http://dev-data-aggregator:8013"
+        IMAGE_PROCESSOR_URL: "http://dev-image-processor:8020"
+        DB_PROXY_URL: "http://dev-db-proxy:5433"
+        CACHE_MANAGER_URL: "http://dev-cache-manager:6380"
+        CONFIG_SERVICE_URL: "http://dev-config-service:9093"
+        METRICS_COLLECTOR_URL: "http://dev-metrics-collector:9090"
+        QUEUE_MONITOR_URL: "http://dev-queue-monitor:9091"
+        HEALTH_CHECKER_URL: "http://dev-health-checker:9092"
+    target:
+      kind: ConfigMap
+      name: common-config
+
+# Update image tags for development
+# NOTE: notification-service image is NOT included in phase1
+images:
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-web-ui
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-admin-dashboard
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-api-gateway
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-auth-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-user-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-product-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-order-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-payment-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-event-processor
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-analytics-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-report-generator
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-data-aggregator
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-image-processor
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-db-proxy
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-cache-manager
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-config-service
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-metrics-collector
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-queue-monitor
+    newTag: dev
+  - name: AWS_ACCOUNT_ID.dkr.ecr.AWS_REGION.amazonaws.com/devops-agent-demo-health-checker
+    newTag: dev

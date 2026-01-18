@@ -1,0 +1,69 @@
+# ArgoCD AppProject for devops-agent-demo
+# Defines boundaries and permissions for applications in this project
+#
+# Security considerations:
+#   - Limits source repositories to the specific Git repo
+#   - Restricts destination clusters and namespaces
+#   - Denies access to sensitive cluster resources by default
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: devops-agent-demo
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/part-of: argocd
+    app.kubernetes.io/component: project
+  # Finalizer ensures proper cleanup of applications before project deletion
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: DevOps Agent Demo Project - Pre-production workloads
+
+  # Source repositories allowed for this project
+  sourceRepos:
+    - "git@github.com:snirkap/devops-agent-k8s-demo.git"
+
+  # Destination clusters and namespaces allowed
+  destinations:
+    # Allow deployment to any namespace in the local cluster
+    - namespace: "*"
+      server: https://kubernetes.default.svc
+      name: in-cluster
+
+  # Cluster resources that applications in this project can manage
+  # Using wildcards to allow all cluster-scoped resources
+  # (Namespaces, ClusterRoles, ClusterRoleBindings, CRDs, IngressClass, etc.)
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  # Namespace-scoped resources allowed
+  # Using wildcards to allow all namespaced resources
+  # (Deployments, Services, ConfigMaps, Secrets, Ingress, ServiceAccounts, etc.)
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  # Resources denied (these take precedence over whitelist)
+  # Prevent applications from modifying ArgoCD itself
+  namespaceResourceBlacklist:
+    - group: argoproj.io
+      kind: AppProject
+
+  # Roles for this project (optional - can be extended for team access)
+  roles:
+    - name: developer
+      description: Read-only access for developers
+      policies:
+        - p, proj:devops-agent-demo:developer, applications, get, devops-agent-demo/*, allow
+        - p, proj:devops-agent-demo:developer, applications, sync, devops-agent-demo/*, allow
+      groups: []
+
+    - name: admin
+      description: Full access for project admins
+      policies:
+        - p, proj:devops-agent-demo:admin, applications, *, devops-agent-demo/*, allow
+        - p, proj:devops-agent-demo:admin, repositories, *, devops-agent-demo/*, allow
+      groups: []

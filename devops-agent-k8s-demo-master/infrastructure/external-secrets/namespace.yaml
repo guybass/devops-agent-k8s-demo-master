@@ -1,0 +1,10 @@
+# Namespace for External Secrets Operator
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external-secrets
+  labels:
+    app.kubernetes.io/name: external-secrets
+    app.kubernetes.io/component: operator
+    app.kubernetes.io/managed-by: kustomize

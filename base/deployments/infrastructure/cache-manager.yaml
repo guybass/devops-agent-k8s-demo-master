@@ -1,0 +1,135 @@
+# Cache Manager Deployment
+# Redis cache proxy - connects to ElastiCache
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache-manager
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: cache-manager
+    app.kubernetes.io/instance: cache-manager-pre-prod
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/component: infrastructure
+    app.kubernetes.io/part-of: devops-agent-demo
+    app.kubernetes.io/managed-by: kubectl
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cache-manager
+      app.kubernetes.io/instance: cache-manager-pre-prod
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cache-manager
+        app.kubernetes.io/instance: cache-manager-pre-prod
+        app.kubernetes.io/version: "1.0.0"
+        app.kubernetes.io/component: infrastructure
+        app.kubernetes.io/part-of: devops-agent-demo
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "6380"
+    spec:
+      serviceAccountName: infrastructure-sa
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: cache-manager
+          image: 852140462703.dkr.ecr.us-east-2.amazonaws.com/devops-agent-demo-cache-manager:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 6380
+              protocol: TCP
+          env:
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: ENVIRONMENT
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: LOG_LEVEL
+            - name: METRICS_ENABLED
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: METRICS_ENABLED
+            - name: METRICS_COLLECTOR_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: common-config
+                  key: METRICS_COLLECTOR_URL
+            # Redis connection from secrets
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: redis-credentials
+                  key: REDIS_URL
+            - name: REDIS_MAX_CONNECTIONS
+              valueFrom:
+                configMapKeyRef:
+                  name: redis-config
+                  key: REDIS_MAX_CONNECTIONS
+            - name: DEFAULT_TTL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: redis-config
+                  key: DEFAULT_TTL_SECONDS
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "96Mi"
+            limits:
+              cpu: "300m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 6380
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 6380
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: cache-manager
+                topologyKey: kubernetes.io/hostname

@@ -1,0 +1,28 @@
+# Allowed CIDRs Configuration
+# This ConfigMap defines the IP addresses allowed to access ingresses.
+# The CIDR value is automatically applied to all ingresses via Kustomize replacements.
+#
+# To add a new IP:
+#   1. Add the IP with /32 suffix to the comma-separated list below
+#   2. Run: kubectl apply -k overlays/dev-no-domain-phase1/
+#
+# Current IPs:
+#   - 77.125.130.59/32  - Guy's Current IP
+#   - 79.181.131.147/32 - Office IP 1
+#   - 79.181.155.88/32  - Office IP 2
+#   - 79.181.191.131/32 - VPN Exit 1
+#   - 79.181.191.135/32 - VPN Exit 2
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: allowed-cidrs-config
+  namespace: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: allowed-cidrs
+    app.kubernetes.io/component: security
+    app.kubernetes.io/part-of: devops-agent-demo
+data:
+  # Single source of truth for all ingress CIDR restrictions
+  # Format: comma-separated CIDR blocks (no spaces)
+  ALLOWED_CIDRS: "77.125.130.59/32,79.181.131.147/32,79.181.155.88/32,79.181.191.131/32,79.181.191.135/32"

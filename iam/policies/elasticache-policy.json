@@ -1,0 +1,31 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ElastiCacheDescribeAccess",
+      "Effect": "Allow",
+      "Action": [
+        "elasticache:DescribeReplicationGroups",
+        "elasticache:DescribeCacheClusters",
+        "elasticache:DescribeCacheSubnetGroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ElastiCacheConnectAccess",
+      "Effect": "Allow",
+      "Action": [
+        "elasticache:Connect"
+      ],
+      "Resource": [
+        "arn:aws:elasticache:us-east-2:852140462703:replicationgroup:demo-pre-prod-redis",
+        "arn:aws:elasticache:us-east-2:852140462703:user:*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/Environment": "pre-prod"
+        }
+      }
+    }
+  ]
+}

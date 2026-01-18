@@ -1,0 +1,55 @@
+# Ingress patch for path-based routing without custom domain
+# Replaces the host-based routing with path-based routing
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: devops-agent-demo-ingress
+  namespace: devops-agent-demo
+  annotations:
+    # AWS ALB Ingress Controller annotations
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # Restrict inbound traffic to specific CIDR blocks (update with your IPs)
+    alb.ingress.kubernetes.io/inbound-cidrs: "77.125.130.59/32,79.181.131.147/32,79.181.155.88/32,79.181.191.131/32,79.181.191.135/32"
+    # HTTP only for development - no SSL redirect needed without domain
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    # Health check configuration
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "30"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "5"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "2"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "3"
+    # Tags for cost allocation
+    alb.ingress.kubernetes.io/tags: Environment=dev,Project=devops-agent-demo,Domain=none
+spec:
+  ingressClassName: alb
+  rules:
+    # Single rule without host - matches ALB DNS and any hostname
+    - http:
+        paths:
+          # API Gateway - /api path prefix (most specific first)
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8080
+          # Admin Dashboard - /admin path prefix
+          - path: /admin
+            pathType: Prefix
+            backend:
+              service:
+                name: admin-dashboard
+                port:
+                  number: 3001
+          # Web UI - root path (catch-all, should be last)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-ui
+                port:
+                  number: 3000

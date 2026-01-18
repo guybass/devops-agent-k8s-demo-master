@@ -1,0 +1,53 @@
+# Development environment overlay - Phase 1 (All services except notification-service)
+# Uses the ALB's auto-generated DNS name with path-based routing
+#
+# This overlay deploys:
+#   1. Infrastructure (External Secrets Operator, AWS Load Balancer Controller)
+#   2. Application workloads (all microservices EXCEPT notification-service)
+#
+# Deploy with: kubectl apply -k overlays/dev-no-domain-phase1/
+---
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Infrastructure - these have their own namespaces defined in manifests
+  - ../../infrastructure
+  # Application - wrapped with namespace transformation
+  - app/
+  # Shared configuration for allowed CIDRs (single source of truth)
+  - allowed-cidrs.yaml
+
+labels:
+  - pairs:
+      environment: development
+      domain-mode: none
+      deployment-phase: "1"
+    includeSelectors: false
+
+# Replacements: Inject allowed CIDRs into all ingresses from single source
+replacements:
+  # Replace inbound-cidrs annotation in the app ingress
+  - source:
+      kind: ConfigMap
+      name: allowed-cidrs-config
+      fieldPath: data.ALLOWED_CIDRS
+    targets:
+      - select:
+          kind: Ingress
+          name: dev-devops-agent-demo-ingress
+          namespace: devops-agent-demo
+        fieldPaths:
+          - metadata.annotations.[alb.ingress.kubernetes.io/inbound-cidrs]
+  # Replace inbound-cidrs annotation in the ArgoCD ingress
+  - source:
+      kind: ConfigMap
+      name: allowed-cidrs-config
+      fieldPath: data.ALLOWED_CIDRS
+    targets:
+      - select:
+          kind: Ingress
+          name: argocd-server
+          namespace: argocd
+        fieldPaths:
+          - metadata.annotations.[alb.ingress.kubernetes.io/inbound-cidrs]

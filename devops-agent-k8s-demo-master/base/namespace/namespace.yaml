@@ -1,0 +1,13 @@
+# Namespace for the DevOps Agent Demo application
+# All microservices will be deployed in this namespace for isolation and resource management
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: devops-agent-demo
+  labels:
+    app.kubernetes.io/name: devops-agent-demo
+    app.kubernetes.io/managed-by: kubectl
+    environment: pre-prod
+  annotations:
+    description: "Namespace for DevOps Agent Demo microservices application"
