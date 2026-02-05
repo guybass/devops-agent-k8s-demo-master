@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 # EKS Deployment Script for EC2
-# Run from: ~/AWS-infra-agent-on-vm/python$ (with .venv activated)
-# Requires: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION exported
+# Run from: ~/devops-agent-k8s-demo-master
+# EC2 uses IAM role - no manual key export needed! Just set AWS_DEFAULT_REGION.
 #
 
 set -e
@@ -26,12 +26,6 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 check_prerequisites() {
     log_info "Checking prerequisites..."
 
-    # Check AWS credentials
-    if [[ -z "$AWS_ACCESS_KEY_ID" || -z "$AWS_SECRET_ACCESS_KEY" ]]; then
-        log_error "AWS credentials not set. Export AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY"
-        exit 1
-    fi
-
     # Check AWS CLI
     if ! command -v aws &> /dev/null; then
         log_error "AWS CLI not installed"
@@ -53,9 +47,13 @@ check_prerequisites() {
         sudo mv kustomize /usr/local/bin/
     fi
 
-    # Verify AWS identity
+    # Verify AWS identity (works with IAM role or explicit credentials)
     log_info "Verifying AWS identity..."
-    aws sts get-caller-identity || { log_error "AWS authentication failed"; exit 1; }
+    if ! aws sts get-caller-identity; then
+        log_error "AWS authentication failed. On EC2, ensure the instance has an IAM role attached."
+        log_error "Or export AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY."
+        exit 1
+    fi
 
     log_info "Prerequisites OK"
 }
@@ -251,12 +249,18 @@ show_help() {
     echo "  deploy      - Full deployment (teardown + phase1 + phase2)"
     echo "  help        - Show this help"
     echo ""
-    echo "Environment variables required:"
-    echo "  AWS_ACCESS_KEY_ID"
-    echo "  AWS_SECRET_ACCESS_KEY"
+    echo "Environment variables:"
     echo "  AWS_DEFAULT_REGION (default: us-east-2)"
     echo ""
-    echo "Example:"
+    echo "Authentication:"
+    echo "  - On EC2: Uses IAM role attached to instance (recommended)"
+    echo "  - Local:  Export AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY"
+    echo ""
+    echo "Example (EC2 with IAM role):"
+    echo "  export AWS_DEFAULT_REGION='us-east-2'"
+    echo "  $0 deploy"
+    echo ""
+    echo "Example (local with credentials):"
     echo "  export AWS_ACCESS_KEY_ID='...'"
     echo "  export AWS_SECRET_ACCESS_KEY='...'"
     echo "  export AWS_DEFAULT_REGION='us-east-2'"
