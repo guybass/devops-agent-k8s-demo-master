@@ -8,7 +8,7 @@
 set -e
 
 # Configuration
-CLUSTER_NAME="devops-agent-demo-cluster"
+CLUSTER_NAME="demo-pre-prod-cluster"
 REGION="${AWS_DEFAULT_REGION:-us-east-2}"
 REPO_PATH="$HOME/devops-agent-k8s-demo-master"
 

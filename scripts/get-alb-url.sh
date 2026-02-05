@@ -4,7 +4,7 @@
 # Usage: ./get-alb-url.sh
 #
 
-CLUSTER_NAME="devops-agent-demo-cluster"
+CLUSTER_NAME="demo-pre-prod-cluster"
 REGION="${AWS_DEFAULT_REGION:-us-east-2}"
 
 # Configure kubectl if needed
