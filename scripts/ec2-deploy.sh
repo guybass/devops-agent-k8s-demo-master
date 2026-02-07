@@ -91,6 +91,13 @@ force_finalize_namespace() {
 teardown() {
     log_info "Tearing down existing deployment..."
 
+    # Step 0: Delete webhooks that block resource deletion
+    log_info "Removing blocking webhooks..."
+    kubectl delete validatingwebhookconfiguration aws-load-balancer-webhook 2>/dev/null || true
+    kubectl delete mutatingwebhookconfiguration aws-load-balancer-webhook 2>/dev/null || true
+    kubectl delete validatingwebhookconfiguration externalsecret-validate 2>/dev/null || true
+    kubectl delete validatingwebhookconfiguration secretstore-validate 2>/dev/null || true
+
     for ns in argocd devops-agent-demo; do
         if kubectl get namespace $ns &>/dev/null; then
             log_info "Cleaning up namespace: $ns"
