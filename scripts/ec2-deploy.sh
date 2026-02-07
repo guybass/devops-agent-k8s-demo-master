@@ -98,7 +98,7 @@ teardown() {
     kubectl delete validatingwebhookconfiguration externalsecret-validate 2>/dev/null || true
     kubectl delete validatingwebhookconfiguration secretstore-validate 2>/dev/null || true
 
-    for ns in argocd devops-agent-demo; do
+    for ns in argocd devops-agent-demo external-secrets; do
         if kubectl get namespace $ns &>/dev/null; then
             log_info "Cleaning up namespace: $ns"
 
@@ -135,21 +135,22 @@ teardown() {
     log_info "Deleting namespaces..."
     kubectl delete namespace devops-agent-demo --wait=false 2>/dev/null || true
     kubectl delete namespace argocd --wait=false 2>/dev/null || true
+    kubectl delete namespace external-secrets --wait=false 2>/dev/null || true
 
     # Step 7: Wait briefly
     sleep 5
 
     # Step 8: Force finalize any stuck namespaces
-    for ns in argocd devops-agent-demo; do
+    for ns in argocd devops-agent-demo external-secrets; do
         force_finalize_namespace $ns
     done
 
     # Step 9: Verify cleanup
     sleep 3
-    local remaining=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -E "^(argocd|devops-agent-demo)$" | wc -l)
+    local remaining=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -E "^(argocd|devops-agent-demo|external-secrets)$" | wc -l)
     if [[ $remaining -gt 0 ]]; then
         log_warn "Some namespaces still exist. Retrying force-finalize..."
-        for ns in argocd devops-agent-demo; do
+        for ns in argocd devops-agent-demo external-secrets; do
             force_finalize_namespace $ns
         done
         sleep 3
