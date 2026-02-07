@@ -104,40 +104,22 @@ teardown() {
     log_info "Teardown complete"
 }
 
-# Deploy Phase 1
-deploy_phase1() {
-    log_info "Deploying Phase 1 (19 services, no notification-service)..."
+# Deploy all services (20 services)
+deploy_all() {
+    log_info "Deploying all 20 services..."
 
     cd "$REPO_PATH"
-    kustomize build --load-restrictor=LoadRestrictionsNone overlays/dev-no-domain-phase1/ > /tmp/phase1-rendered.yaml
-    kubectl apply -f /tmp/phase1-rendered.yaml --server-side --force-conflicts
+    kustomize build --load-restrictor=LoadRestrictionsNone overlays/dev-no-domain/ > /tmp/all-rendered.yaml
+    kubectl apply -f /tmp/all-rendered.yaml --server-side --force-conflicts
 
     log_info "Waiting for pods to start..."
-    sleep 20
+    sleep 30
 
-    log_info "Phase 1 pods:"
+    log_info "All pods:"
     kubectl get pods -n devops-agent-demo
 
     POD_COUNT=$(kubectl get pods -n devops-agent-demo --no-headers 2>/dev/null | wc -l)
-    log_info "Phase 1 deployed: $POD_COUNT pods"
-}
-
-# Deploy Phase 2
-deploy_phase2() {
-    log_info "Deploying Phase 2 (adding notification-service)..."
-
-    cd "$REPO_PATH"
-    kustomize build --load-restrictor=LoadRestrictionsNone overlays/dev-no-domain-phase2/ > /tmp/phase2-rendered.yaml
-    kubectl apply -f /tmp/phase2-rendered.yaml --server-side --force-conflicts
-
-    log_info "Waiting for notification-service to start..."
-    sleep 15
-
-    log_info "Notification service status:"
-    kubectl get pods -n devops-agent-demo | grep notification
-
-    POD_COUNT=$(kubectl get pods -n devops-agent-demo --no-headers 2>/dev/null | wc -l)
-    log_info "Phase 2 deployed: $POD_COUNT pods total"
+    log_info "Deployed: $POD_COUNT pods"
 }
 
 # Get ingress URL
@@ -224,13 +206,12 @@ full_deploy() {
     check_prerequisites
     configure_kubeconfig
     teardown
-    deploy_phase1
-    deploy_phase2
+    deploy_all
 
     # Final summary with ALB URL
     echo ""
     log_info "Deployment complete!"
-    echo "ALB_URL=http://$(kubectl get ingress -n devops-agent-demo -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')"
+    wait_for_alb
 }
 
 # Help
@@ -241,12 +222,10 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  setup       - Check prerequisites and configure kubectl"
-    echo "  teardown    - Remove existing deployment"
-    echo "  phase1      - Deploy Phase 1 (19 services)"
-    echo "  phase2      - Deploy Phase 2 (add notification-service)"
-    echo "  url         - Get the ingress URL"
+    echo "  deploy      - Full deployment (teardown + deploy all 20 services)"
+    echo "  teardown    - Remove all deployments (back to Phase 0)"
+    echo "  url         - Get the ALB ingress URL"
     echo "  status      - Show current deployment status"
-    echo "  deploy      - Full deployment (teardown + phase1 + phase2)"
     echo "  help        - Show this help"
     echo ""
     echo "Environment variables:"
@@ -256,15 +235,12 @@ show_help() {
     echo "  - On EC2: Uses IAM role attached to instance (recommended)"
     echo "  - Local:  Export AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY"
     echo ""
-    echo "Example (EC2 with IAM role):"
-    echo "  export AWS_DEFAULT_REGION='us-east-2'"
-    echo "  $0 deploy"
-    echo ""
-    echo "Example (local with credentials):"
-    echo "  export AWS_ACCESS_KEY_ID='...'"
-    echo "  export AWS_SECRET_ACCESS_KEY='...'"
-    echo "  export AWS_DEFAULT_REGION='us-east-2'"
-    echo "  $0 deploy"
+    echo "Workflow:"
+    echo "  $0 setup      # Configure kubectl (Phase 0)"
+    echo "  $0 status     # Verify clean state"
+    echo "  $0 deploy     # Deploy all 20 services"
+    echo "  $0 url        # Get ALB URL"
+    echo "  $0 teardown   # Back to Phase 0 (clean state)"
 }
 
 # Main
@@ -277,18 +253,6 @@ case "${1:-deploy}" in
         check_prerequisites
         configure_kubeconfig
         teardown
-        ;;
-    phase1)
-        check_prerequisites
-        configure_kubeconfig
-        deploy_phase1
-        get_url
-        ;;
-    phase2)
-        check_prerequisites
-        configure_kubeconfig
-        deploy_phase2
-        get_url
         ;;
     url)
         configure_kubeconfig

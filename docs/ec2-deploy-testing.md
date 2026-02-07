@@ -21,32 +21,9 @@ chmod +x scripts/ec2-deploy.sh scripts/get-alb-url.sh
 
 ## Phase 0: Verify Clean State (Nothing Deployed)
 
-### Step 1: Connect to EKS cluster
+### Connect to EKS cluster and check status:
 ```bash
 ./scripts/ec2-deploy.sh setup
-```
-Expected: "Connected to EKS cluster"
-
-### Step 2: Check for namespaces
-```bash
-kubectl get namespaces | grep -E "argocd|devops-agent-demo"
-```
-**Clean state:** No output (empty) = nothing deployed
-
-### Step 3: Check for pods
-```bash
-kubectl get pods -n devops-agent-demo
-```
-**Clean state:** `Error from server (NotFound): namespaces "devops-agent-demo" not found`
-
-### Step 4: Check for ingress/ALB
-```bash
-./scripts/get-alb-url.sh
-```
-**Clean state:** `ALB_URL=NOT_READY`
-
-### Or use the all-in-one status command:
-```bash
 ./scripts/ec2-deploy.sh status
 ```
 
@@ -63,59 +40,44 @@ No ingress found
 ```
 
 ### Verification checklist for Phase 0:
-- [ ] `kubectl get namespaces` shows NO `argocd` or `devops-agent-demo`
-- [ ] `kubectl get pods -n devops-agent-demo` returns "not found"
+- [ ] No `argocd` or `devops-agent-demo` namespaces
+- [ ] No pods running
 - [ ] `./scripts/get-alb-url.sh` returns `NOT_READY`
 
 ---
 
-## Phase 1: Deploy Web Application
+## Deploy: All 20 Services
 
-### Commands to run:
+### Command:
 ```bash
-# Option A: Deploy Phase 1 only (19 services, no notification-service)
-./scripts/ec2-deploy.sh phase1
-
-# Option B: Full deploy (teardown + phase1 + phase2 with notification-service)
 ./scripts/ec2-deploy.sh deploy
 ```
 
+This performs: teardown (if needed) -> deploy all 20 services
+
 ### Get ALB URL:
 ```bash
-# Method 1: Using the get-alb-url script
 ./scripts/get-alb-url.sh
-
-# Method 2: Using ec2-deploy.sh
+# or
 ./scripts/ec2-deploy.sh url
-
-# Method 3: Direct kubectl (after kubeconfig is configured)
-kubectl get ingress -n devops-agent-demo -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}'
 ```
 
 ### Expected output:
 ```
-ALB_URL=http://k8s-devopsag-maininge-xxxxxxxx-xxxxxxxxx.us-east-2.elb.amazonaws.com
+ALB_URL=http://k8s-devopsag-devdevop-xxxxxxxx-xxxxxxxxx.us-east-2.elb.amazonaws.com
 ```
 
 ### Verification checklist:
 - [ ] ALB URL is returned (not `NOT_READY`)
-- [ ] URL is accessible in browser (may take 2-3 minutes for ALB to be fully healthy)
-- [ ] `./scripts/ec2-deploy.sh status` shows pods in Running state
-
-### Check pod status:
-```bash
-./scripts/ec2-deploy.sh status
-# Or directly:
-kubectl get pods -n devops-agent-demo
-```
+- [ ] URL is accessible in browser (may take 2-3 minutes for ALB to be healthy)
+- [ ] `./scripts/ec2-deploy.sh status` shows 20 pods in Running state
 
 ---
 
 ## Back to Phase 0: Teardown Everything
 
-### Commands to run:
+### Command:
 ```bash
-# Teardown all deployments
 ./scripts/ec2-deploy.sh teardown
 ```
 
@@ -126,9 +88,8 @@ kubectl get pods -n devops-agent-demo
 [INFO] Teardown complete
 ```
 
-### Verify teardown:
+### Verify clean state:
 ```bash
-# Check status - should return to clean state
 ./scripts/ec2-deploy.sh status
 ```
 
@@ -137,20 +98,19 @@ kubectl get pods -n devops-agent-demo
 - [ ] `argocd` namespace deleted
 - [ ] No pods running
 - [ ] No ingress resources
-- [ ] ALB URL no longer accessible
 
 ---
 
 ## Quick Command Summary
 
-| Phase | Command | Purpose |
-|-------|---------|---------|
-| Setup | `./scripts/ec2-deploy.sh setup` | Configure kubectl for EKS |
-| Phase 0 Check | `./scripts/ec2-deploy.sh status` | Verify clean state |
-| Phase 1 Deploy | `./scripts/ec2-deploy.sh phase1` | Deploy 19 services |
-| Full Deploy | `./scripts/ec2-deploy.sh deploy` | Teardown + Phase1 + Phase2 |
-| Get URL | `./scripts/get-alb-url.sh` | Get ALB URL |
-| Teardown | `./scripts/ec2-deploy.sh teardown` | Remove everything |
+| Command | Purpose |
+|---------|---------|
+| `./scripts/ec2-deploy.sh setup` | Configure kubectl for EKS |
+| `./scripts/ec2-deploy.sh status` | Check current state |
+| `./scripts/ec2-deploy.sh deploy` | Deploy all 20 services |
+| `./scripts/ec2-deploy.sh url` | Get ALB URL |
+| `./scripts/ec2-deploy.sh teardown` | Back to Phase 0 (clean state) |
+| `./scripts/get-alb-url.sh` | Get ALB URL (standalone) |
 
 ---
 
@@ -161,16 +121,17 @@ kubectl get pods -n devops-agent-demo
 - Run `./scripts/get-alb-url.sh` again
 
 ### Namespace stuck terminating
-The script handles this automatically with finalizer removal. If still stuck:
+The script handles this automatically. If still stuck:
 ```bash
+# Remove targetgroupbinding finalizers
+for tgb in $(kubectl get targetgroupbindings -n devops-agent-demo -o name); do kubectl patch $tgb -n devops-agent-demo -p '{"metadata":{"finalizers":[]}}' --type=merge; done
+
+# Force delete namespace
 kubectl get namespace devops-agent-demo -o json | sed 's/"finalizers": \[.*\]/"finalizers": []/' | kubectl replace --raw "/api/v1/namespaces/devops-agent-demo/finalize" -f -
 ```
 
 ### Cannot connect to cluster
 ```bash
-# Re-run setup
 ./scripts/ec2-deploy.sh setup
-
-# Verify AWS credentials
 aws sts get-caller-identity
 ```
