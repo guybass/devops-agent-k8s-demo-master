@@ -72,11 +72,32 @@ configure_kubeconfig() {
 teardown() {
     log_info "Tearing down existing deployment..."
 
-    # Remove ArgoCD finalizers
-    for app in $(kubectl get applications -n argocd -o name 2>/dev/null); do
-        kubectl patch $app -n argocd -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+    # Remove finalizers from resources that block namespace deletion
+    for ns in argocd devops-agent-demo; do
+        if kubectl get namespace $ns &>/dev/null; then
+            log_info "Removing finalizers from $ns resources..."
+
+            # Remove ArgoCD application finalizers
+            for app in $(kubectl get applications -n $ns -o name 2>/dev/null); do
+                kubectl patch $app -n $ns -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+            done
+
+            # Remove ArgoCD appproject finalizers
+            for proj in $(kubectl get appprojects -n $ns -o name 2>/dev/null); do
+                kubectl patch $proj -n $ns -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+            done
+
+            # Remove targetgroupbinding finalizers (ALB controller)
+            for tgb in $(kubectl get targetgroupbindings -n $ns -o name 2>/dev/null); do
+                kubectl patch $tgb -n $ns -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+            done
+
+            # Remove ingress finalizers
+            for ing in $(kubectl get ingress -n $ns -o name 2>/dev/null); do
+                kubectl patch $ing -n $ns -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
+            done
+        fi
     done
-    kubectl patch appproject devops-agent-demo -n argocd -p '{"metadata":{"finalizers":[]}}' --type=merge 2>/dev/null || true
 
     # Delete namespaces
     kubectl delete namespace devops-agent-demo --wait=false 2>/dev/null || true
@@ -84,7 +105,7 @@ teardown() {
 
     # Wait for cleanup
     log_info "Waiting for namespaces to terminate..."
-    sleep 10
+    sleep 5
 
     # Force delete if stuck
     for ns in argocd devops-agent-demo; do
@@ -95,10 +116,10 @@ teardown() {
         fi
     done
 
-    # Verify clean
+    # Final wait and verify
+    sleep 5
     if kubectl get namespaces | grep -qE "argocd|devops-agent-demo"; then
-        log_warn "Namespaces still exist, waiting..."
-        sleep 10
+        log_warn "Namespaces still terminating, continuing anyway..."
     fi
 
     log_info "Teardown complete"
