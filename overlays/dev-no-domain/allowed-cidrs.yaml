@@ -24,4 +24,5 @@ metadata:
 data:
   # Single source of truth for all ingress CIDR restrictions
   # Format: comma-separated CIDR blocks (no spaces)
-  ALLOWED_CIDRS: "79.181.131.147/32,79.181.155.88/32,79.181.191.131/32,79.181.191.135/32,79.181.191.135/32"
+  # Use 0.0.0.0/0 to allow all traffic
+  ALLOWED_CIDRS: "0.0.0.0/0"
