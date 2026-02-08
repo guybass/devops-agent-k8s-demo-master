@@ -126,26 +126,38 @@ teardown() {
                 force_delete_resource appproject $proj $ns
             done
 
-            # Step 5: Force delete all pods
+            # Step 5: Force delete ExternalSecrets
+            for es in $(kubectl get externalsecrets -n $ns -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+                log_info "  Removing externalsecret: $es"
+                force_delete_resource externalsecret $es $ns
+            done
+
+            # Step 6: Force delete SecretStores
+            for ss in $(kubectl get secretstores -n $ns -o jsonpath='{.items[*].metadata.name}' 2>/dev/null); do
+                log_info "  Removing secretstore: $ss"
+                force_delete_resource secretstore $ss $ns
+            done
+
+            # Step 7: Force delete all pods
             kubectl delete pods --all -n $ns --force --grace-period=0 2>/dev/null || true
         fi
     done
 
-    # Step 6: Delete namespaces
+    # Step 8: Delete namespaces
     log_info "Deleting namespaces..."
     kubectl delete namespace devops-agent-demo --wait=false 2>/dev/null || true
     kubectl delete namespace argocd --wait=false 2>/dev/null || true
     kubectl delete namespace external-secrets --wait=false 2>/dev/null || true
 
-    # Step 7: Wait briefly
+    # Step 9: Wait briefly
     sleep 5
 
-    # Step 8: Force finalize any stuck namespaces
+    # Step 10: Force finalize any stuck namespaces
     for ns in argocd devops-agent-demo external-secrets; do
         force_finalize_namespace $ns
     done
 
-    # Step 9: Verify cleanup
+    # Step 11: Verify cleanup
     sleep 3
     local remaining=$(kubectl get namespaces -o jsonpath='{.items[*].metadata.name}' | tr ' ' '\n' | grep -E "^(argocd|devops-agent-demo|external-secrets)$" | wc -l)
     if [[ $remaining -gt 0 ]]; then
